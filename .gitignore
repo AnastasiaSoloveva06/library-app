@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+library.db
+static/uploads/covers/*.jpg
+static/uploads/covers/*.png
+static/uploads/covers/*.gif
+static/uploads/covers/*.webp
+.env
+.DS_Store
