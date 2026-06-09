@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Вход — Электронная библиотека{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card shadow-sm">
+      <div class="card-header bg-dark text-white">
+        <h5 class="mb-0"><i class="bi bi-box-arrow-in-right me-2"></i>Вход в систему</h5>
+      </div>
+      <div class="card-body p-4">
+        <form method="POST">
+          <div class="mb-3">
+            <label for="login" class="form-label fw-semibold">Логин</label>
+            <input type="text" class="form-control" id="login" name="login"
+                   value="{{ request.form.get('login', '') }}" required autofocus>
+          </div>
+          <div class="mb-3">
+            <label for="password" class="form-label fw-semibold">Пароль</label>
+            <input type="password" class="form-control" id="password" name="password" required>
+          </div>
+          <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="remember" name="remember">
+            <label class="form-check-label" for="remember">Запомнить меня</label>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-box-arrow-in-right me-1"></i>Войти
+          </button>
+        </form>
+      </div>
+    </div>
+    <p class="text-center text-muted mt-3 small">
+      Тестовые учётные записи: <code>admin / admin123</code> &nbsp;|&nbsp;
+      <code>moderator / mod123</code> &nbsp;|&nbsp; <code>user / user123</code>
+    </p>
+  </div>
+</div>
+{% endblock %}
