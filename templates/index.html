@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% block title %}Главная — Электронная библиотека{% endblock %}
+
+{% block content %}
+
+{# популярные книги #}
+{% if popular %}
+<section class="mb-5">
+  <h4 class="mb-3"><i class="bi bi-fire text-danger me-2"></i>Популярные книги <small class="text-muted fs-6">(за последние 3 месяца)</small></h4>
+  <div class="row row-cols-2 row-cols-md-5 g-3">
+    {% for book, views in popular %}
+    <div class="col">
+      <div class="card h-100 book-card shadow-sm">
+        {% if book.cover %}
+          <img src="{{ url_for('static', filename='uploads/covers/' + book.cover.filename) }}"
+               class="card-img-top" style="height:160px;object-fit:cover;" alt="{{ book.title }}">
+        {% else %}
+          <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height:160px;">
+            <i class="bi bi-book text-white fs-2"></i>
+          </div>
+        {% endif %}
+        <div class="card-body p-2">
+          <h6 class="card-title mb-1" style="font-size:.85rem;">
+            <a href="{{ url_for('books.view', book_id=book.id) }}" class="text-decoration-none stretched-link text-dark">
+              {{ book.title }}
+            </a>
+          </h6>
+          <span class="badge bg-warning text-dark"><i class="bi bi-eye me-1"></i>{{ views }}</span>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{# недавно просмотренные книги #}
+{% if recent_books %}
+<section class="mb-5">
+  <h4 class="mb-3"><i class="bi bi-clock-history text-primary me-2"></i>Недавно просмотренные книги</h4>
+  <div class="row row-cols-2 row-cols-md-5 g-3">
+    {% for book in recent_books %}
+    <div class="col">
+      <div class="card h-100 book-card shadow-sm">
+        {% if book.cover %}
+          <img src="{{ url_for('static', filename='uploads/covers/' + book.cover.filename) }}"
+               class="card-img-top" style="height:160px;object-fit:cover;" alt="{{ book.title }}">
+        {% else %}
+          <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height:160px;">
+            <i class="bi bi-book text-white fs-2"></i>
+          </div>
+        {% endif %}
+        <div class="card-body p-2">
+          <h6 class="card-title mb-0" style="font-size:.85rem;">
+            <a href="{{ url_for('books.view', book_id=book.id) }}" class="text-decoration-none stretched-link text-dark">
+              {{ book.title }}
+            </a>
+          </h6>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{# каталог книг #}
+<section>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-journals me-2"></i>Каталог книг</h4>
+  </div>
+
+  {% if books %}
+  <div class="table-responsive shadow-sm rounded">
+    <table class="table table-hover align-middle bg-white mb-0">
+      <thead class="table-dark">
+        <tr>
+          <th style="width:90px;">Обложка</th>
+          <th>Название</th>
+          <th>Жанры</th>
+          <th>Год</th>
+          <th>Оценка</th>
+          <th>Рецензии</th>
+          <th class="text-center">Действия</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for book, avg_rating, review_count in books %}
+        <tr>
+          <td>
+            {% if book.cover %}
+              <img src="{{ url_for('static', filename='uploads/covers/' + book.cover.filename) }}"
+                   class="cover-img" alt="{{ book.title }}">
+            {% else %}
+              <div class="cover-img bg-secondary d-flex align-items-center justify-content-center">
+                <i class="bi bi-book text-white fs-4"></i>
+              </div>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('books.view', book_id=book.id) }}" class="fw-semibold text-dark text-decoration-none">
+              {{ book.title }}
+            </a>
+            <div class="text-muted small">{{ book.author }}</div>
+          </td>
+          <td>
+            {% for g in book.genres %}
+              <span class="badge bg-info text-dark me-1">{{ g.name }}</span>
+            {% endfor %}
+          </td>
+          <td>{{ book.year }}</td>
+          <td>
+            {% if avg_rating > 0 %}
+              <span class="badge bg-warning text-dark rating-badge">
+                <i class="bi bi-star-fill me-1"></i>{{ '%.1f'|format(avg_rating) }}
+              </span>
+            {% else %}
+              <span class="text-muted small">нет оценок</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge bg-secondary">{{ review_count }}</span>
+          </td>
+          <td class="text-center">
+            <div class="btn-group btn-group-sm">
+              <a href="{{ url_for('books.view', book_id=book.id) }}"
+                 class="btn btn-outline-primary" title="Просмотр">
+                <i class="bi bi-eye"></i>
+              </a>
+              {% if current_user.is_authenticated and current_user.is_moderator() %}
+              <a href="{{ url_for('books.edit', book_id=book.id) }}"
+                 class="btn btn-outline-secondary" title="Редактировать">
+                <i class="bi bi-pencil"></i>
+              </a>
+              {% endif %}
+              {% if current_user.is_authenticated and current_user.is_admin() %}
+              <button type="button" class="btn btn-outline-danger"
+                      title="Удалить"
+                      data-bs-toggle="modal"
+                      data-bs-target="#deleteModal{{ book.id }}">
+                <i class="bi bi-trash"></i>
+              </button>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if current_user.is_authenticated and current_user.is_admin() %}
+    {% for book, avg_rating, review_count in books %}
+    <div class="modal fade" id="deleteModal{{ book.id }}" tabindex="-1"
+         aria-labelledby="deleteModalLabel{{ book.id }}" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title" id="deleteModalLabel{{ book.id }}">Удаление книги</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            Вы уверены, что хотите удалить книгу <strong>{{ book.title }}</strong>?
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Нет</button>
+            <form method="POST" action="{{ url_for('books.delete', book_id=book.id) }}">
+              <button type="submit" class="btn btn-danger">Да</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  {# пагинация #}
+  {% if pagination.pages > 1 %}
+  <nav class="mt-4">
+    <ul class="pagination justify-content-center">
+      <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+        <a class="page-link" href="{{ url_for('index', page=pagination.prev_num) }}">
+          <i class="bi bi-chevron-left"></i>
+        </a>
+      </li>
+      {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+        {% if p %}
+          <li class="page-item {{ 'active' if p == pagination.page }}">
+            <a class="page-link" href="{{ url_for('index', page=p) }}">{{ p }}</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% endif %}
+      {% endfor %}
+      <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+        <a class="page-link" href="{{ url_for('index', page=pagination.next_num) }}">
+          <i class="bi bi-chevron-right"></i>
+        </a>
+      </li>
+    </ul>
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <div class="alert alert-info">В библиотеке пока нет книг.</div>
+  {% endif %}
+
+  {% if current_user.is_authenticated and current_user.is_admin() %}
+  <div class="mt-3">
+    <a href="{{ url_for('books.add') }}" class="btn btn-success">
+      <i class="bi bi-plus-lg me-1"></i>Добавить книгу
+    </a>
+  </div>
+  {% endif %}
+</section>
+
+{% endblock %}
