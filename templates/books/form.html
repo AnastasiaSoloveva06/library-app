@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Добавить книгу' if mode == 'add' else 'Редактировать книгу' }} — Электронная библиотека{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Главная</a></li>
+        <li class="breadcrumb-item active">{{ 'Добавить книгу' if mode == 'add' else 'Редактировать книгу' }}</li>
+      </ol>
+    </nav>
+
+    <div class="card shadow-sm">
+      <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">
+          <i class="bi bi-{{ 'plus-lg' if mode == 'add' else 'pencil' }} me-2"></i>
+          {{ 'Добавить книгу' if mode == 'add' else 'Редактировать книгу' }}
+        </h5>
+      </div>
+      <div class="card-body p-4">
+        <form method="POST" enctype="multipart/form-data">
+
+          {% macro field(label, fname, ftype='text', required=True, min_val=None, max_val=None) %}
+          {% set cur_val = form_data.get(fname, '') if form_data else '' %}
+          {% if not cur_val and book %}
+            {% set cur_val = book[fname] if fname in book.__table__.columns.keys() else '' %}
+          {% endif %}
+          <div class="mb-3">
+            <label for="{{ fname }}" class="form-label fw-semibold">
+              {{ label }}{% if required %}<span class="text-danger ms-1">*</span>{% endif %}
+            </label>
+            <input type="{{ ftype }}" class="form-control" id="{{ fname }}" name="{{ fname }}"
+                   value="{{ cur_val }}"
+                   {% if min_val is not none %}min="{{ min_val }}"{% endif %}
+                   {% if max_val is not none %}max="{{ max_val }}"{% endif %}
+                   {{ 'required' if required }}>
+          </div>
+          {% endmacro %}
+
+          {{ field('Название', 'title') }}
+          {{ field('Автор', 'author') }}
+
+          <div class="mb-3">
+            <label for="description" class="form-label fw-semibold">
+              Краткое описание (Markdown)<span class="text-danger ms-1">*</span>
+            </label>
+            {% if form_data and form_data.get('description') %}
+              {% set desc_val = form_data.get('description') %}
+            {% elif book %}
+              {% set desc_val = book.description %}
+            {% else %}
+              {% set desc_val = '' %}
+            {% endif %}
+            <textarea class="form-control" id="description" name="description" rows="6" >{{ desc_val }}</textarea>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4">
+              {{ field('Год издания', 'year', ftype='number', min_val=1000, max_val=2100) }}
+            </div>
+            <div class="col-md-4">
+              {{ field('Объём (страниц)', 'pages', ftype='number', min_val=1) }}
+            </div>
+          </div>
+
+          {{ field('Издательство', 'publisher') }}
+
+          
+          <div class="mb-3">
+            <label for="genres" class="form-label fw-semibold">
+              Жанры<span class="text-danger ms-1">*</span>
+            </label>
+            {% if form_data and form_data.getlist('genres') %}
+              {% set sel = form_data.getlist('genres') %}
+            {% elif book %}
+              {% set sel = book.genres|map(attribute='id')|map('string')|list %}
+            {% else %}
+              {% set sel = [] %}
+            {% endif %}
+            <select class="form-select" id="genres" name="genres" multiple required size="7">
+              {% for genre in genres %}
+              <option value="{{ genre.id }}" {% if genre.id|string in sel %}selected{% endif %}>
+                {{ genre.name }}
+              </option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Удерживайте Ctrl (или ⌘ на Mac) для выбора нескольких жанров</div>
+          </div>
+
+          {% if mode == 'add' %}
+          <div class="mb-3">
+            <label for="cover" class="form-label fw-semibold">
+              Обложка<span class="text-danger ms-1">*</span>
+            </label>
+            <input type="file" class="form-control" id="cover" name="cover"
+                   accept="image/jpeg,image/png,image/gif,image/webp" required>
+            <div class="form-text">Форматы: JPEG, PNG, GIF, WEBP. Макс. размер: 16 МБ.</div>
+          </div>
+          {% else %}
+            {% if book and book.cover %}
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Текущая обложка</label><br>
+              <img src="{{ url_for('static', filename='uploads/covers/' + book.cover.filename) }}"
+                   style="height:120px;object-fit:cover;border-radius:4px;" alt="Обложка">
+              <div class="form-text mt-1 text-muted">Обложка не подлежит изменению после загрузки.</div>
+            </div>
+            {% endif %}
+          {% endif %}
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-floppy me-1"></i>Сохранить
+            </button>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">
+              <i class="bi bi-x-lg me-1"></i>Отмена
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const easyMDE = new EasyMDE({
+    element: document.getElementById('description'),
+    spellChecker: false,
+    autofocus: false,
+    placeholder: 'Введите описание в формате Markdown...',
+    toolbar: ['bold','italic','heading','|','quote','unordered-list','ordered-list',
+              '|','link','|','preview','side-by-side','fullscreen','|','guide'],
+  });
+
+  document.querySelector('form').addEventListener('submit', function(e) {
+    const val = easyMDE.value().trim();
+    if (!val) {
+      e.preventDefault();
+      alert('Пожалуйста, заполните поле «Краткое описание»');
+      easyMDE.codemirror.focus();
+    }
+  });
+</script>
+{% endblock %}
