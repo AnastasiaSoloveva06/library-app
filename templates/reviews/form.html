@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Написать рецензию — {{ book.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Главная</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('books.view', book_id=book.id) }}">{{ book.title }}</a></li>
+        <li class="breadcrumb-item active">Рецензия</li>
+      </ol>
+    </nav>
+
+    <div class="card shadow-sm">
+      <div class="card-header bg-dark text-white">
+        <h5 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>Написать рецензию на «{{ book.title }}»</h5>
+      </div>
+      <div class="card-body p-4">
+        <form method="POST">
+          <div class="mb-3">
+            <label for="rating" class="form-label fw-semibold">Оценка <span class="text-danger">*</span></label>
+            <select class="form-select" id="rating" name="rating" required>
+              {% for val, label in rating_choices %}
+              <option value="{{ val }}"
+                {{ 'selected' if form_data.get('rating')|string == val|string }}>
+                {{ label }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="text" class="form-label fw-semibold">Текст рецензии <span class="text-danger">*</span></label>
+            <textarea class="form-control" id="text" name="text" rows="6" required>{{ form_data.get('text', '') }}</textarea>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-floppy me-1"></i>Сохранить
+            </button>
+            <a href="{{ url_for('books.view', book_id=book.id) }}" class="btn btn-secondary">
+              <i class="bi bi-x-lg me-1"></i>Отмена
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const easyMDE = new EasyMDE({
+    element: document.getElementById('text'),
+    spellChecker: false,
+    placeholder: 'Напишите вашу рецензию в формате Markdown...',
+    toolbar: ['bold','italic','|','quote','unordered-list','|','preview','|','guide'],
+  });
+</script>
+{% endblock %}
