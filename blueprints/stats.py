@@ -120,3 +120,4 @@ def export_stats():
     resp.headers['Content-Type'] = 'text/csv; charset=utf-8'
     resp.headers['Content-Disposition'] = f'attachment; filename=book_views_stats_{today}.csv'
     return resp
+
