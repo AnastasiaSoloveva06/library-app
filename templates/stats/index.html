@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% block title %}Статистика — Электронная библиотека{% endblock %}
+
+{% block content %}
+<h3 class="mb-4"><i class="bi bi-bar-chart-line me-2"></i>Статистика</h3>
+
+<ul class="nav nav-tabs mb-4" id="statsTabs">
+  <li class="nav-item">
+    <a class="nav-link {{ 'active' if tab == 'log' }}"
+       href="{{ url_for('stats.index', tab='log') }}">
+      <i class="bi bi-journal-text me-1"></i>Журнал действий пользователей
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {{ 'active' if tab == 'views' }}"
+       href="{{ url_for('stats.index', tab='views') }}">
+      <i class="bi bi-eye me-1"></i>Статистика просмотра книг
+    </a>
+  </li>
+</ul>
+
+{# журнал действий пользователя #}
+{% if tab == 'log' %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="mb-0">Журнал действий пользователей</h5>
+  <a href="{{ url_for('stats.export_log') }}" class="btn btn-success btn-sm">
+    <i class="bi bi-download me-1"></i>Экспорт в CSV
+  </a>
+</div>
+
+<div class="table-responsive shadow-sm rounded">
+  <table class="table table-hover align-middle bg-white mb-0">
+    <thead class="table-dark">
+      <tr>
+        <th style="width:60px;">№</th>
+        <th>ФИО пользователя</th>
+        <th>Название книги</th>
+        <th>Дата и время просмотра</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set base_num = (log_page - 1) * log_per_page %}
+      {% for log, book, user in log_entries %}
+      <tr>
+        <td>{{ base_num + loop.index }}</td>
+        <td>
+          {% if user %}
+            {{ user.full_name }}
+          {% else %}
+            <span class="text-muted fst-italic">Неаутентифицированный пользователь</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="{{ url_for('books.view', book_id=book.id) }}" class="text-decoration-none">
+            {{ book.title }}
+          </a>
+        </td>
+        <td>{{ log.viewed_at.strftime('%d.%m.%Y %H:%M:%S') }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="text-center text-muted py-4">Записей нет</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% set total_pages = (log_total // log_per_page) + (1 if log_total % log_per_page else 0) %}
+{% if total_pages > 1 %}
+<nav class="mt-3">
+  <ul class="pagination justify-content-center">
+    <li class="page-item {{ 'disabled' if log_page <= 1 }}">
+      <a class="page-link" href="{{ url_for('stats.index', tab='log', log_page=log_page-1) }}">
+        <i class="bi bi-chevron-left"></i>
+      </a>
+    </li>
+    {% for p in range(1, total_pages + 1) %}
+      {% if p == log_page or p == 1 or p == total_pages or (p >= log_page - 2 and p <= log_page + 2) %}
+      <li class="page-item {{ 'active' if p == log_page }}">
+        <a class="page-link" href="{{ url_for('stats.index', tab='log', log_page=p) }}">{{ p }}</a>
+      </li>
+      {% elif p == log_page - 3 or p == log_page + 3 %}
+      <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %}
+    {% endfor %}
+    <li class="page-item {{ 'disabled' if log_page >= total_pages }}">
+      <a class="page-link" href="{{ url_for('stats.index', tab='log', log_page=log_page+1) }}">
+        <i class="bi bi-chevron-right"></i>
+      </a>
+    </li>
+  </ul>
+</nav>
+{% endif %}
+
+{# статистика просмотра книг #}
+{% elif tab == 'views' %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h5 class="mb-0">Статистика просмотра книг</h5>
+  <a href="{{ url_for('stats.export_stats', date_from=date_from, date_to=date_to) }}"
+     class="btn btn-success btn-sm">
+    <i class="bi bi-download me-1"></i>Экспорт в CSV
+  </a>
+</div>
+
+<form method="GET" class="card card-body bg-light mb-4 shadow-sm">
+  <input type="hidden" name="tab" value="views">
+  <div class="row g-3 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label fw-semibold mb-1">Дата от</label>
+      <input type="date" class="form-control" name="date_from" value="{{ date_from }}">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-semibold mb-1">Дата до</label>
+      <input type="date" class="form-control" name="date_to" value="{{ date_to }}">
+    </div>
+    <div class="col-md-4">
+      <button type="submit" class="btn btn-primary w-100">
+        <i class="bi bi-funnel me-1"></i>Применить
+      </button>
+    </div>
+  </div>
+</form>
+
+<div class="table-responsive shadow-sm rounded">
+  <table class="table table-hover align-middle bg-white mb-0">
+    <thead class="table-dark">
+      <tr>
+        <th style="width:60px;">№</th>
+        <th>Название книги</th>
+        <th>Количество просмотров</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set base_num = (stats_page - 1) * stats_per_page %}
+      {% for book, views in stats_entries %}
+      <tr>
+        <td>{{ base_num + loop.index }}</td>
+        <td>
+          <a href="{{ url_for('books.view', book_id=book.id) }}" class="text-decoration-none">
+            {{ book.title }}
+          </a>
+        </td>
+        <td>
+          <span class="badge bg-primary fs-6">{{ views }}</span>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3" class="text-center text-muted py-4">Данных нет</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% set total_pages = (stats_total // stats_per_page) + (1 if stats_total % stats_per_page else 0) %}
+{% if total_pages > 1 %}
+<nav class="mt-3">
+  <ul class="pagination justify-content-center">
+    <li class="page-item {{ 'disabled' if stats_page <= 1 }}">
+      <a class="page-link" href="{{ url_for('stats.index', tab='views', stats_page=stats_page-1, date_from=date_from, date_to=date_to) }}">
+        <i class="bi bi-chevron-left"></i>
+      </a>
+    </li>
+    {% for p in range(1, total_pages + 1) %}
+      {% if p == stats_page or p == 1 or p == total_pages or (p >= stats_page - 2 and p <= stats_page + 2) %}
+      <li class="page-item {{ 'active' if p == stats_page }}">
+        <a class="page-link"
+           href="{{ url_for('stats.index', tab='views', stats_page=p, date_from=date_from, date_to=date_to) }}">
+          {{ p }}
+        </a>
+      </li>
+      {% elif p == stats_page - 3 or p == stats_page + 3 %}
+      <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %}
+    {% endfor %}
+    <li class="page-item {{ 'disabled' if stats_page >= total_pages }}">
+      <a class="page-link" href="{{ url_for('stats.index', tab='views', stats_page=stats_page+1, date_from=date_from, date_to=date_to) }}">
+        <i class="bi bi-chevron-right"></i>
+      </a>
+    </li>
+  </ul>
+</nav>
+{% endif %}
+
+{% endif %}
+{% endblock %}
