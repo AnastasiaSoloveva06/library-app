@@ -31,7 +31,7 @@
           </div>
           <div class="mb-3">
             <label for="text" class="form-label fw-semibold">Текст рецензии <span class="text-danger">*</span></label>
-            <textarea class="form-control" id="text" name="text" rows="6" required>{{ form_data.get('text', '') }}</textarea>
+            <textarea class="form-control" id="text" name="text" rows="6">{{ form_data.get('text', '') }}</textarea>
           </div>
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-primary">
@@ -55,6 +55,15 @@
     spellChecker: false,
     placeholder: 'Напишите вашу рецензию в формате Markdown...',
     toolbar: ['bold','italic','|','quote','unordered-list','|','preview','|','guide'],
+  });
+
+  document.querySelector('form').addEventListener('submit', function(e) {
+    const val = easyMDE.value().trim();
+    if (!val) {
+      e.preventDefault();
+      alert('Пожалуйста, заполните поле «Текст рецензии»');
+      easyMDE.codemirror.focus();
+    }
   });
 </script>
 {% endblock %}
